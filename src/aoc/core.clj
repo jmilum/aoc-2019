@@ -24,10 +24,10 @@
 
 ;; 2-1
 #_(def data  (into [] (edn/read-string (slurp "resources/2.edn"))))
-#_(def opcodes {1 + 2 * 99 :end})
 
 (defn execute-rf [state ptr]
   (let [[opcode in1 in2 out] (subvec state ptr (+ 4 ptr))
+        opcodes {1 + 2 * 99 :end}
         op (get opcodes opcode)]
     (if (= op :end)
       (reduced state)
@@ -68,12 +68,11 @@
   (->> (range 1 (inc len))
        (map (fn [n] [(first loc) (- (second loc) n)]))))
 
-#_(def ops {:U up :D down :R right :L left})
-
 (defn parse-instr [instr] [(keyword (subs instr 0 1)) (edn/read-string (subs instr 1))])
 
 (defn execute-instr [loc instr]
-  (let [[dir len] instr
+  (let [ops {:U up :D down :R right :L left}
+        [dir len] instr
         op (get ops dir)]
     (op loc len)))
 
@@ -162,4 +161,39 @@
 #_ (cross-steps data)
 
 ;; 4-1
+#_ (def data (range 171309 643604))
 
+(defn digits [n] (->> n str (map (comp read-string str))))
+
+(defn adjacent-equal? [n]
+  (->> (digits n)
+       (partition 2 1)
+       (some #(= (first %) (second %)))
+       ((complement nil?))))
+
+(defn never-decreasing? [n]
+  (->> (digits n)
+       (partition 2 1)
+       (every? #(<= (first %) (second %)))))
+
+#_ (->> data
+        (filter adjacent-equal?)
+        (filter never-decreasing?)
+        (count))
+
+;; 4-2
+
+(defn adjacent-equal? [n]
+  (->> (digits n)
+       (partition 2 1)
+       (filter #(= (first %) (second %)))
+       (frequencies)
+       (some #(= 1 (second %)))
+       ((complement nil?))))
+
+#_ (->> data
+        (filter adjacent-equal?)
+        (filter never-decreasing?)
+        (count))
+
+;; 5-1
