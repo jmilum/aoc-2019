@@ -191,9 +191,67 @@
        (some #(= 1 (second %)))
        ((complement nil?))))
 
-#_ (->> data
-        (filter adjacent-equal?)
-        (filter never-decreasing?)
-        (count))
+#_(->> data
+       (filter adjacent-equal?)
+       (filter never-decreasing?)
+       (count))
 
 ;; 5-1
+
+#_(def data (into [] (edn/read-string (slurp "resources/5-1.edn"))))
+
+(defn get-val [state args modes arg-pos]
+  (let [arg  (get args arg-pos)
+        mode (get modes arg-pos)]
+    (condp = mode
+      0 (get state arg)
+      1 arg)))
+
+(defn op-1 [state args modes]
+  (let [arg1 (get-val state args modes 0)
+        arg2 (get-val state args modes 1)
+        arg3 (get args 2)]
+    (assoc state arg3 (+ arg1 arg2))))
+
+(defn op-2 [state args modes]
+  (let [arg1 (get-val state args modes 0)
+        arg2 (get-val state args modes 1)
+        arg3 (get args 2)]
+    (assoc state arg3 (* arg1 arg2))))
+
+(defn op-3 [state args _]
+  (let [arg (first args)]
+    (println "please input value? ")
+    (assoc state arg (edn/read-string (read-line)))))
+
+(defn op-4 [state args _]
+  (let [arg (first args)]
+    (println (str "output: " (get state arg)))))
+
+(defn op-99 [state _ _] (reduced state))
+
+(def opcodes
+  {1  {:fn op-1 :arg-num 3}
+   2  {:fn op-2 :arg-num 3}
+   3  {:fn op-3 :arg-num 1}
+   4  {:fn op-4 :arg-num 1}
+   99 {:fn op-99 :arg-num 0}})
+
+(defn execute-opcode [state instr-ptr]
+  (let [instr-str (str (get state instr-ptr))
+        len       (- (count instr-str) 2)
+        opcode    (edn/read-string (subs instr-str len))
+        arg-num   (get-in opcodes [opcode :arg-num])
+        args      (subvec state (inc instr-ptr) (+ 1 arg-num instr-ptr))
+        modes-1   (into [] (reverse (map edn/read-string (str/split (subs instr-str 0 len) #""))))
+        modes     (mapv #(get modes-1 % 0) (range 0 arg-num))
+        f         (get-in opcodes [opcode :fn])]
+    (f state args modes)))
+
+
+
+#_(execute-opcode data 0)
+
+#_(subvec data 0 5)
+
+#_(subvec data 0 5)
