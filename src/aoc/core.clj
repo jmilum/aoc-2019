@@ -4,7 +4,9 @@
    [clojure.string :as str]
    [aoc.util :as util]
    [clojure.edn :as edn]
-   [clojure.set :as set]))
+   [clojure.set :as set]
+   [ubergraph.core :as uber]
+   [ubergraph.alg :as uber-alg]))
 
 ;; 1-1
 #_(def data (edn/read-string (slurp "resources/1.edn")))
@@ -368,3 +370,30 @@
 #_(reduce execute-opcode {:state data :instr-ptr 0} (range 0 (count data)))
 
 ;; 6-1
+#_(def data (str/split-lines (slurp "resources/6-1.edn")))
+
+(defn parse-orbit [s]
+  (let [nodes (str/split s #"\)")]
+    [(keyword (first nodes)) (keyword (second nodes))]))
+
+(defn build-graph [g data]
+  (->> data
+       (map parse-orbit)
+       (uber/add-edges* g)))
+
+(defn count-orbits [data]
+  (let [orbits (->> data (map parse-orbit) (uber/add-edges* (uber/graph)))]
+    (->> orbits
+         (uber/nodes)
+         (map #(uber-alg/shortest-path orbits :COM %))
+         (map :cost)
+         (apply +))))
+
+#_(count-orbits data)
+
+;; 6-2
+(defn transfers [data start end]
+  (let [orbits (->> data (map parse-orbit) (uber/add-edges* (uber/graph)))]
+    (- (:cost (uber-alg/shortest-path orbits start end)) 2)))
+
+#_(transfers data :YOU :SAN)

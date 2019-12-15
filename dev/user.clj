@@ -11,7 +11,9 @@
    [criterium.core :refer [bench quick-bench]]
    [clojure.edn :as edn]
    [aoc.core :refer :all]
-   [aoc.util :as util]))
+   [aoc.util :as util]
+   [ubergraph.core :as uber]
+   [ubergraph.alg :as uber-alg]))
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* true)
 
