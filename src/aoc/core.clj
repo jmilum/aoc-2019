@@ -224,34 +224,45 @@
     (println "please input value? ")
     (assoc state arg (edn/read-string (read-line)))))
 
-(defn op-4 [state args _]
-  (let [arg (first args)]
-    (println (str "output: " (get state arg)))))
-
-(defn op-99 [state _ _] (reduced state))
+(defn op-4 [state args modes]
+  (let [value (get-val state args modes 0)]
+    (println (str "output: " value))
+    state))
 
 (def opcodes
   {1  {:fn op-1 :arg-num 3}
    2  {:fn op-2 :arg-num 3}
    3  {:fn op-3 :arg-num 1}
    4  {:fn op-4 :arg-num 1}
-   99 {:fn op-99 :arg-num 0}})
+   99 {:fn nil :arg-num 0}})
 
-(defn execute-opcode [state instr-ptr]
-  (let [instr-str (str (get state instr-ptr))
-        len       (- (count instr-str) 2)
-        opcode    (edn/read-string (subs instr-str len))
-        arg-num   (get-in opcodes [opcode :arg-num])
-        args      (subvec state (inc instr-ptr) (+ 1 arg-num instr-ptr))
-        modes-1   (into [] (reverse (map edn/read-string (str/split (subs instr-str 0 len) #""))))
-        modes     (mapv #(get modes-1 % 0) (range 0 arg-num))
-        f         (get-in opcodes [opcode :fn])]
-    (f state args modes)))
+(defn parse-instr [instr]
+  (let [instr-str  (str instr)
+        instr-len  (count instr-str)
+        opcode-str (condp = instr-len
+                     1 instr-str
+                     2 instr-str
+                     (subs instr-str (- instr-len 2)))
+        opcode     (edn/read-string opcode-str)
+        arg-num    (get-in opcodes [opcode :arg-num])
+        mode-len   (- instr-len (count opcode-str))
+        mode-str   (subs instr-str 0 mode-len)
+        mode       (-> (if (empty? mode-str) "0" mode-str)
+                       (str/split #"")
+                       reverse
+                       (->> (map edn/read-string))
+                       (as-> coll (mapv #(nth coll % 0) (range 0 arg-num))))]
+    {:opcode opcode :mode mode}))
 
+(defn execute-opcode [m _]
+  (let [{:keys [state instr-ptr]} m
+        instr   (get state instr-ptr)
+        {:keys [opcode mode]} (parse-instr instr)
+        arg-num (get-in opcodes [opcode :arg-num])
+        args    (subvec state (inc instr-ptr) (+ 1 arg-num instr-ptr))
+        f       (get-in opcodes [opcode :fn])]
+    (if (not= 99 opcode)
+      {:state (f state args mode) :instr-ptr (+ 1 instr-ptr arg-num)}
+      (reduced {}))))
 
-
-#_(execute-opcode data 0)
-
-#_(subvec data 0 5)
-
-#_(subvec data 0 5)
+#_(reduce execute-opcode {:state data :instr-ptr 0} (range 0 (count data)))
