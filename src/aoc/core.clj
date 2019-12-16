@@ -356,7 +356,7 @@
     {:opcode opcode :mode mode}))
 
 (defn execute-opcode [m _]
-  (let [{:keys [state instr-ptr]} m
+  (let [{:keys [state instr-ptr phase input]} m
         instr   (get state instr-ptr)
         {:keys [opcode mode]} (parse-instr instr)
         arg-num (get-in opcodes [opcode :arg-num])
@@ -397,3 +397,97 @@
     (- (:cost (uber-alg/shortest-path orbits start end)) 2)))
 
 #_(transfers data :YOU :SAN)
+
+;; 7-1
+(defn op-1 [m]
+  (let [{:keys [state args modes instr-ptr]} m
+        arg1 (get-val state args modes 0)
+        arg2 (get-val state args modes 1)
+        arg3 (get args 2)]
+    {:state     (assoc state arg3 (+ arg1 arg2))
+     :instr-ptr (+ 4 instr-ptr)}))
+
+(defn op-2 [m]
+  (let [{:keys [state args modes instr-ptr]} m
+        arg1 (get-val state args modes 0)
+        arg2 (get-val state args modes 1)
+        arg3 (get args 2)]
+    {:state     (assoc state arg3 (* arg1 arg2))
+     :instr-ptr (+ 4 instr-ptr)}))
+
+(defn op-3 [m]
+  (let [{:keys [state args instr-ptr inputs]} m
+        arg (first args)]
+    {:state     (assoc state arg (first inputs))
+     :inputs    (rest inputs)
+     :instr-ptr (+ 2 instr-ptr)}))
+
+(defn op-4 [m]
+  (let [{:keys [state args modes instr-ptr]} m
+        value (get-val state args modes 0)]
+    (println (str "output: " value))
+    {:state     state
+     :instr-ptr (+ 2 instr-ptr)}))
+
+(defn op-5 [m]
+  (let [{:keys [state args modes instr-ptr]} m
+        arg1 (get-val state args modes 0)
+        arg2 (get-val state args modes 1)]
+    (if (zero? arg1)
+      {:state state :instr-ptr (+ 3 instr-ptr)}
+      {:state state :instr-ptr arg2})))
+
+(defn op-6 [m]
+  (let [{:keys [state args modes instr-ptr]} m
+        arg1 (get-val state args modes 0)
+        arg2 (get-val state args modes 1)]
+    (if (zero? arg1)
+      {:state state :instr-ptr arg2}
+      {:state state :instr-ptr (+ 3 instr-ptr)})))
+
+(defn op-7 [m]
+  (let [{:keys [state args modes instr-ptr]} m
+        arg1 (get-val state args modes 0)
+        arg2 (get-val state args modes 1)
+        arg3 (nth args 2)]
+    (if (< arg1 arg2)
+      {:state (assoc state arg3 1) :instr-ptr (+ 4 instr-ptr)}
+      {:state (assoc state arg3 0) :instr-ptr (+ 4 instr-ptr)})))
+
+(defn op-8 [m]
+  (let [{:keys [state args modes instr-ptr]} m
+        arg1 (get-val state args modes 0)
+        arg2 (get-val state args modes 1)
+        arg3 (nth args 2)]
+    (if (= arg1 arg2)
+      {:state (assoc state arg3 1) :instr-ptr (+ 4 instr-ptr)}
+      {:state (assoc state arg3 0) :instr-ptr (+ 4 instr-ptr)})))
+
+(def opcodes
+  {1  {:fn op-1 :arg-num 3}
+   2  {:fn op-2 :arg-num 3}
+   3  {:fn op-3 :arg-num 1}
+   4  {:fn op-4 :arg-num 1}
+   5  {:fn op-5 :arg-num 2}
+   6  {:fn op-6 :arg-num 2}
+   7  {:fn op-7 :arg-num 3}
+   8  {:fn op-8 :arg-num 3}
+   99 {:fn nil :arg-num 0}})
+
+(defn execute-opcode [m _]
+  (let [{:keys [state instr-ptr phase input]} m
+        instr   (get state instr-ptr)
+        {:keys [opcode mode]} (parse-instr instr)
+        arg-num (get-in opcodes [opcode :arg-num])
+        args    (subvec state (inc instr-ptr) (+ 1 arg-num instr-ptr))
+        f       (get-in opcodes [opcode :fn])]
+    (if (not= 99 opcode)
+      (f (util/->map state args mode instr-ptr))
+      (reduced {}))))
+
+#_(def data (into [] (edn/read-string (slurp "resources/5-1.edn"))))
+#_(reduce execute-opcode {:state data :instr-ptr 0} (range 0 (count data)))
+
+
+;(def data [3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0])
+;(reduce execute-opcode {:state data :instr-ptr 0} (range 0 (count data)))
