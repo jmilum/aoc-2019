@@ -189,3 +189,17 @@
 
 (defn pad [n coll val]
   (take n (concat coll (repeat val))))
+
+(defn lump [& colls]
+  "Column major to row major"
+  (partition
+   (count colls)
+   (apply interleave colls)))
+
+(defn unlump [coll]
+  "Row major to column major"
+  (map
+   #(map
+     (fn [i] (nth coll i) %)
+     (range (count (first coll))))
+   coll))

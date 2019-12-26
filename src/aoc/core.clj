@@ -167,7 +167,7 @@
 ;;; 4-1
 ;#_ (def data (range 171309 643604))
 ;
-;(defn digits [n] (->> n str (map (comp read-string str))))
+(defn digits [n] (->> n str (map (comp read-string str))))
 ;
 ;(defn adjacent-equal? [n]
 ;  (->> (digits n)
@@ -671,3 +671,27 @@
 
 #_(def program (into [] (edn/read-string (slurp "resources/7-1.edn"))))
 #_(apply max (map (partial run-prog program) (combo/permutations [5 6 7 8 9])))
+
+;; 8-1
+#_(->> (slurp "resources/8-1.txt")
+       (map str)
+       (butlast)
+       (partition 150)
+       (map frequencies)
+       (sort-by #(get % "0"))
+       (first)
+       (#(* (get % "2") (get % "1"))))
+
+;; 8-2
+#_(->> (slurp "resources/8-1.txt")
+       (map str)
+       (butlast)
+       (map read-string)
+       (partition 150)
+       (apply interleave)
+       (partition 100)
+       (map (fn [x] (drop-while #{2} x)))
+       (map first)
+       (partition 25))
+
+
